@@ -1,6 +1,6 @@
-module multicycle(PCW,PCWC,IorD,MemR,MemW,IRW,M2R,PCSrc1,PCSrc0,
-	ALUOp1,ALUOp0,ALUSrcB1,ALUSrcB0,ALUSrcA,RegW,RegD,NS3,NS2,NS1,NS0,
-	S3,S2,S1,S0,Op5,Op4,Op3,Op2,Op1,Op0);
+module multiPLA(PCW,PCWC,IorD,MemR,MemW,IRW,M2R,PCSrc1,PCSrc0,
+	ALUOp1,ALUOp0,ALUSrcB1,ALUSrcB0,ALUSrcA,RegW,RegD,{NS3,NS2,NS1,NS0},
+	{S3,S2,S1,S0},{Op5,Op4,Op3,Op2,Op1,Op0});
 output PCW,PCWC,IorD,MemR,MemW,IRW,M2R,PCSrc1,PCSrc0,
 	ALUOp1,ALUOp0,ALUSrcB1,ALUSrcB0,ALUSrcA,RegW,RegD,NS3,NS2,NS1,NS0;
 input S3,S2,S1,S0;
@@ -45,3 +45,45 @@ assign NS3 = w[5]|w[6];
 assign NS2 = w[3]|w[4]|w[10]|w[13];
 assign NS1 = w[0]|w[1]|w[2]|w[4]|w[10];
 assign NS0 = w[0]|w[3]|w[6]|w[10]|w[16];
+
+
+endmodule
+
+module dff(q, d, clk, reset);
+	input d, reset, clk;
+	output q;
+	reg q;
+	always @ (posedge clk)
+	begin
+		if (!reset) q <= 1'b0;
+		else q <= d;
+	end
+endmodule
+
+module stateReg(q, d, clk, reset);//d = ns, q = s
+input [3:0] d;
+input clk,reset;
+output [3:0] q;
+genvar j;
+generate for (j=0;j<4;j=j+1) begin: reg_loop
+	dff d1(q[j],d[j],clk,reset);
+	end	
+endgenerate
+endmodule
+
+module multicycle(PCW,PCWC,IorD,MemR,MemW,IRW,M2R,PCSrc1,PCSrc0,
+	ALUOp1,ALUOp0,ALUSrcB1,ALUSrcB0,ALUSrcA,RegW,RegD,Op,clk,reset,S);
+output PCW,PCWC,IorD,MemR,MemW,IRW,M2R,PCSrc1,PCSrc0,
+	ALUOp1,ALUOp0,ALUSrcB1,ALUSrcB0,ALUSrcA,RegW,RegD;
+
+input [5:0] Op;
+input clk, reset;
+
+wire [3:0] NS;
+output [3:0] S;
+
+stateReg s1(S,NS,clk,reset);
+multiPLA pla(PCW,PCWC,IorD,MemR,MemW,IRW,M2R,PCSrc1,PCSrc0,
+	ALUOp1,ALUOp0,ALUSrcB1,ALUSrcB0,ALUSrcA,RegW,RegD,NS,S,Op);
+
+endmodule
